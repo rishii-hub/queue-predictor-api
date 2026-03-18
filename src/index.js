@@ -1,31 +1,26 @@
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
+
 const socketService = require("./services/socketService");
 const mlPredictor = require("./services/mlPredictor");
 const cacheService = require("./services/cacheService");
 const db = require("./config/db");
-
-// ──────────────────────────────────────────────────────────────
-// Q-Predict — Time Optimization Engine for Public Services
-// ──────────────────────────────────────────────────────────────
-// ARCHITECTURE:
-//   - Express handles REST API (stateless — all shared state in Redis/cacheService)
-//   - Socket.io handles real-time prediction broadcasts
-//   - ML layer trains on startup and retrains incrementally
-//   - Horizontally scalable: deploy N instances behind a load balancer
-//     sharing a single Redis cluster. No sticky sessions required.
-// ──────────────────────────────────────────────────────────────
 
 const app = express();
 const server = http.createServer(app);
 
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// ✅ FIXED CORS (important for frontend)
+app.use(cors({
+    origin: "*",
+    methods: ["GET", "POST"],
+}));
+
 app.use(express.json());
 
-// ─── Request Logger Middleware ────────────────────
+// ─── Request Logger ─────────────────────────────
 app.use((req, res, next) => {
     const start = Date.now();
     res.on('finish', () => {
@@ -37,7 +32,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// ─── API Routes ──────────────────────────────────
+// ─── Routes ─────────────────────────────────────
 const poiRoutes = require("./routes/pois");
 const reportRoutes = require("./routes/reports");
 const alertRoutes = require("./routes/alerts");
@@ -46,64 +41,54 @@ app.use("/api/pois", poiRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/alerts", alertRoutes);
 
-// ─── Health Check (Production-Grade) ─────────────
-// Returns structured system status for monitoring dashboards.
+// ─── ROOT ROUTE (IMPORTANT FOR RENDER TEST)
 app.get("/", (req, res) => {
-    res.json({ 
-        message: "Queue Predictor API is running!",
-        system: {
-            cache: cacheService.status(),
-            websocket: { clients: socketService.getClientCount() },
+    res.send("🚀 Q-Predict API is running");
+});
+
+// ─── HEALTH ROUTE
+app.get("/health", (req, res) => {
+    const cache = cacheService.status();
+    const mlModels = Object.keys(db.historicalData).length;
+
+    res.status(200).json({
+        status: "ok",
+        environment: process.env.NODE_ENV || "development",
+        uptime: cache.uptime,
+        services: {
+            redis: cache.backend,
+            websocketClients: socketService.getClientCount(),
+            mlModels
         }
     });
 });
 
-app.get("/health", (req, res) => {
-    const cache = cacheService.status();
-    const mlModels = Object.keys(db.historicalData).length;
-    const healthy = cache.mode === 'production' ? cache.redis : true;
-
-    res.status(healthy ? 200 : 503).json({
-        status: healthy ? 'healthy' : 'degraded',
-        version: '2.0.0',
-        environment: process.env.NODE_ENV || 'development',
-        uptime: cache.uptime,
-        services: {
-            redis: { connected: cache.redis, mode: cache.backend },
-            websocket: { active: true, clients: socketService.getClientCount() },
-            ml: { modelsLoaded: mlModels, status: 'active' },
-            predictionEngine: { status: 'active', method: 'EMA + ML + confidence blending' },
-        },
-        scalability: 'Stateless server — horizontally scalable via shared Redis layer',
-    });
-});
-
-// ─── Global Error Handler ────────────────────────
+// ─── ERROR HANDLER
 app.use((err, req, res, next) => {
-    console.error(`❌ Error on ${req.method} ${req.path}: ${err.message}`);
-    res.status(err.status || 500).json({
-        error: err.message || 'Internal server error',
-        path: req.path,
-        timestamp: new Date().toISOString(),
+    console.error(`❌ ${req.method} ${req.path}: ${err.message}`);
+    res.status(500).json({
+        error: err.message || "Internal server error"
     });
 });
 
-// ─── Initialize Socket.io ────────────────────────
+// ─── SOCKET INIT
 socketService.init(server);
 
-// ─── Train ML Models on Startup ──────────────────
+// ─── ML TRAINING
 for (const [poiId, history] of Object.entries(db.historicalData)) {
     mlPredictor.trainModel(poiId, history);
 }
-console.log('🧠 ML models trained for', Object.keys(db.historicalData).length, 'POIs');
+console.log("🧠 ML models trained");
 
-// ─── Export for Testing ──────────────────────────
-module.exports = app;
-
-// ─── Start Server ────────────────────────────────
+// ─── START SERVER (CRITICAL FOR RENDER)
 if (require.main === module) {
     server.listen(PORT, () => {
-        console.log(`🚀 Server is running on port ${PORT}`);
-        console.log(`📊 Health: http://localhost:${PORT}/health`);
+        console.log(`🚀 Server running on port ${PORT}`);
+
+        if (process.env.NODE_ENV !== "production") {
+            console.log(`📊 Local: http://localhost:${PORT}/health`);
+        }
     });
 }
+
+module.exports = app;
