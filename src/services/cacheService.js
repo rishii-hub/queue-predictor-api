@@ -1,13 +1,4 @@
 // src/services/cacheService.js
-// ──────────────────────────────────────────────────────────────
-// Redis persistence layer with environment-aware behavior:
-//   PRODUCTION (NODE_ENV=production): Redis is REQUIRED. Crash on failure.
-//   DEVELOPMENT: Graceful in-memory fallback when Redis is unavailable.
-//
-// SCALABILITY NOTE: All shared state flows through this service.
-// In production, multiple server instances share a single Redis cluster,
-// making the system horizontally scalable without sticky sessions.
-// ──────────────────────────────────────────────────────────────
 
 const Redis = require('ioredis');
 
@@ -18,10 +9,12 @@ let redis = null;
 let isRedisAvailable = false;
 const startTime = Date.now();
 
-// In-memory fallback store (development only)
+// In-memory fallback
 const memStore = new Map();
 
-// Initialize Redis connection
+// ─────────────────────────────────────────────
+// INIT REDIS (SAFE — NO CRASH)
+// ─────────────────────────────────────────────
 if (!IS_TEST) {
     try {
         redis = new Redis({
@@ -30,10 +23,8 @@ if (!IS_TEST) {
             maxRetriesPerRequest: 1,
             retryStrategy(times) {
                 if (times > 3) {
-                    if (IS_PRODUCTION) {
-                        console.error('🔴 FATAL: Redis connection failed in production. Shutting down.');
-                        process.exit(1);
-                    }
+                    console.warn('⚠️ Redis connection failed — switching to in-memory fallback');
+                    isRedisAvailable = false;
                     return null;
                 }
                 return Math.min(times * 200, 2000);
@@ -41,26 +32,25 @@ if (!IS_TEST) {
             lazyConnect: true,
         });
 
-        redis.connect().then(() => {
-            isRedisAvailable = true;
-            console.log('✅ Redis connected');
-        }).catch((err) => {
-            if (IS_PRODUCTION) {
-                console.error('🔴 FATAL: Redis required in production but unavailable:', err.message);
-                process.exit(1);
-            }
-            isRedisAvailable = false;
-            console.log('⚠️  Redis unavailable — using in-memory fallback (dev mode)');
-        });
+        redis.connect()
+            .then(() => {
+                isRedisAvailable = true;
+                console.log('✅ Redis connected');
+            })
+            .catch((err) => {
+                isRedisAvailable = false;
+
+                if (IS_PRODUCTION) {
+                    console.warn('⚠️ Redis unavailable in production — using in-memory fallback');
+                } else {
+                    console.log('⚠️ Redis unavailable — using in-memory fallback (dev mode)');
+                }
+            });
 
         redis.on('error', () => {
             if (isRedisAvailable) {
                 isRedisAvailable = false;
-                if (IS_PRODUCTION) {
-                    console.error('🔴 Redis connection lost in production!');
-                } else {
-                    console.log('⚠️  Redis connection lost — falling back to in-memory');
-                }
+                console.warn('⚠️ Redis connection lost — falling back to in-memory');
             }
         });
 
@@ -70,24 +60,28 @@ if (!IS_TEST) {
                 console.log('✅ Redis reconnected');
             }
         });
+
     } catch (e) {
+        isRedisAvailable = false;
+
         if (IS_PRODUCTION) {
-            console.error('🔴 FATAL: Cannot initialize Redis in production');
-            process.exit(1);
+            console.warn('⚠️ Redis init failed in production — using fallback');
+        } else {
+            console.log('⚠️ Redis not available — using in-memory fallback (dev)');
         }
-        console.log('⚠️  Redis not available — using in-memory fallback (dev mode)');
     }
 }
 
-// ─── Core Operations ──────────────────────────────
+// ─────────────────────────────────────────────
+// CORE OPERATIONS
+// ─────────────────────────────────────────────
 
 const get = async (key) => {
     if (isRedisAvailable) {
         const val = await redis.get(key);
         return val ? JSON.parse(val) : null;
     }
-    const val = memStore.get(key);
-    return val !== undefined ? val : null;
+    return memStore.get(key) ?? null;
 };
 
 const set = async (key, value) => {
@@ -112,7 +106,9 @@ const del = async (key) => {
     memStore.delete(key);
 };
 
-// ─── List Operations (for reports) ────────────────
+// ─────────────────────────────────────────────
+// LIST OPS
+// ─────────────────────────────────────────────
 
 const listPush = async (key, value) => {
     if (isRedisAvailable) {
@@ -130,7 +126,9 @@ const listGetAll = async (key) => {
     return memStore.get(key) || [];
 };
 
-// ─── Hash Operations (for historical data) ────────
+// ─────────────────────────────────────────────
+// HASH OPS
+// ─────────────────────────────────────────────
 
 const hashSet = async (key, field, value) => {
     if (isRedisAvailable) {
@@ -153,6 +151,7 @@ const hashGetAll = async (key) => {
     if (isRedisAvailable) {
         const obj = await redis.hgetall(key);
         if (!obj || Object.keys(obj).length === 0) return null;
+
         const parsed = {};
         for (const [k, v] of Object.entries(obj)) {
             parsed[k] = JSON.parse(v);
@@ -162,7 +161,9 @@ const hashGetAll = async (key) => {
     return memStore.get(key) || null;
 };
 
-// ─── Status ───────────────────────────────────────
+// ─────────────────────────────────────────────
+// STATUS
+// ─────────────────────────────────────────────
 
 const status = () => ({
     redis: isRedisAvailable,
