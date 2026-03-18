@@ -13,7 +13,9 @@ const server = http.createServer(app);
 
 const PORT = process.env.PORT || 3000;
 
-// ✅ FIXED CORS (important for frontend)
+// ─────────────────────────────
+// MIDDLEWARE
+// ─────────────────────────────
 app.use(cors({
     origin: "*",
     methods: ["GET", "POST"],
@@ -21,22 +23,21 @@ app.use(cors({
 
 app.use(express.json());
 
-// Serve frontend static files
-app.use(express.static(path.join(__dirname, "../frontend")));
-
-// ─── Request Logger ─────────────────────────────
+// ─── Request Logger
 app.use((req, res, next) => {
     const start = Date.now();
-    res.on('finish', () => {
+    res.on("finish", () => {
         const duration = Date.now() - start;
-        if (req.path !== '/' && req.path !== '/health' && !req.path.includes('socket.io')) {
+        if (!req.path.includes("socket.io")) {
             console.log(`${req.method} ${req.path} → ${res.statusCode} (${duration}ms)`);
         }
     });
     next();
 });
 
-// ─── Routes ─────────────────────────────────────
+// ─────────────────────────────
+// API ROUTES
+// ─────────────────────────────
 const poiRoutes = require("./routes/pois");
 const reportRoutes = require("./routes/reports");
 const alertRoutes = require("./routes/alerts");
@@ -45,15 +46,11 @@ app.use("/api/pois", poiRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/alerts", alertRoutes);
 
-// ─── ROOT ROUTE (IMPORTANT FOR RENDER TEST)
-app.get("/", (req, res) => {
-    res.send("🚀 Q-Predict API is running");
-});
-
-// ─── HEALTH ROUTE
+// ─────────────────────────────
+// HEALTH ROUTE (KEEP THIS)
+// ─────────────────────────────
 app.get("/health", (req, res) => {
     const cache = cacheService.status();
-    const mlModels = Object.keys(db.historicalData).length;
 
     res.status(200).json({
         status: "ok",
@@ -62,12 +59,24 @@ app.get("/health", (req, res) => {
         services: {
             redis: cache.backend,
             websocketClients: socketService.getClientCount(),
-            mlModels
+            mlModels: Object.keys(db.historicalData).length
         }
     });
 });
 
-// ─── ERROR HANDLER
+// ─────────────────────────────
+// SERVE FRONTEND (CRITICAL)
+// ─────────────────────────────
+app.use(express.static(path.join(__dirname, "../frontend")));
+
+// Catch-all → React app (MUST BE LAST)
+app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../frontend/index.html"));
+});
+
+// ─────────────────────────────
+// ERROR HANDLER
+// ─────────────────────────────
 app.use((err, req, res, next) => {
     console.error(`❌ ${req.method} ${req.path}: ${err.message}`);
     res.status(500).json({
@@ -75,24 +84,19 @@ app.use((err, req, res, next) => {
     });
 });
 
-// ─── SOCKET INIT
+// ─────────────────────────────
+// SOCKET + ML
+// ─────────────────────────────
 socketService.init(server);
 
-// ─── ML TRAINING
 for (const [poiId, history] of Object.entries(db.historicalData)) {
     mlPredictor.trainModel(poiId, history);
 }
 console.log("🧠 ML models trained");
 
-const db = require("./config/db");
-
-// Catch-all → React app
-app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../frontend/index.html"));
-});
-
-seedReports(); // ADD THIS
-// ─── START SERVER (CRITICAL FOR RENDER)
+// ─────────────────────────────
+// START SERVER
+// ─────────────────────────────
 if (require.main === module) {
     server.listen(PORT, () => {
         console.log(`🚀 Server running on port ${PORT}`);
