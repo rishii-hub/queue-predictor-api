@@ -36,7 +36,7 @@ app.use((req, res, next) => {
 });
 
 // ─────────────────────────────
-// API ROUTES
+// API ROUTES (MUST COME FIRST)
 // ─────────────────────────────
 const poiRoutes = require("./routes/pois");
 const reportRoutes = require("./routes/reports");
@@ -47,7 +47,7 @@ app.use("/api/reports", reportRoutes);
 app.use("/api/alerts", alertRoutes);
 
 // ─────────────────────────────
-// HEALTH ROUTE (KEEP THIS)
+// HEALTH ROUTE
 // ─────────────────────────────
 app.get("/health", (req, res) => {
     const cache = cacheService.status();
@@ -65,17 +65,19 @@ app.get("/health", (req, res) => {
 });
 
 // ─────────────────────────────
-// SERVE FRONTEND (CRITICAL)
+// FRONTEND SERVING (AFTER API)
 // ─────────────────────────────
+
+// Serve static files (React build)
 app.use(express.static(path.join(__dirname, "../frontend")));
 
-// Catch-all → React app (MUST BE LAST)
+// Catch-all → React app (MUST BE LAST ROUTE)
 app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend/index.html"));
 });
 
 // ─────────────────────────────
-// ERROR HANDLER
+// ERROR HANDLER (LAST)
 // ─────────────────────────────
 app.use((err, req, res, next) => {
     console.error(`❌ ${req.method} ${req.path}: ${err.message}`);
