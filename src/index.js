@@ -1,3 +1,4 @@
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
@@ -19,6 +20,9 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Serve frontend static files
+app.use(express.static(path.join(__dirname, "../frontend")));
 
 // ─── Request Logger ─────────────────────────────
 app.use((req, res, next) => {
@@ -80,6 +84,14 @@ for (const [poiId, history] of Object.entries(db.historicalData)) {
 }
 console.log("🧠 ML models trained");
 
+const db = require("./config/db");
+
+// Catch-all → React app
+app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../frontend/index.html"));
+});
+
+seedReports(); // ADD THIS
 // ─── START SERVER (CRITICAL FOR RENDER)
 if (require.main === module) {
     server.listen(PORT, () => {

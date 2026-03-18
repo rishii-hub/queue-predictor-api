@@ -51,26 +51,222 @@ const memDb = {
         { id: '4', name: 'HDFC Branch B', type: 'BANK', lat: 28.6146, lng: 77.2107 }
     ],
     reports: [],
-    
+
     cache: {
         poi_wait_times: {}
     },
-    
+
     // Historical data enriched with heuristic defaults for demo stability
     historicalData: {
-        '1': { "1_10": 20, "1_14": 40, "2_10": 15, "3_9": 38, "4_10": 45, "5_11": 55, "0_16": 20 }, 
-        '2': { "3_15": 10, "5_12": 30, "1_10": 25, "2_12": 30, "4_15": 30, "0_10": 15 },             
-        '3': { "6_18": 60, "0_09": 45, "2_18": 60, "6_6": 55, "0_6": 45, "5_18": 35 },             
-        '4': { "3_15": 5, "5_12": 15, "1_10": 20, "2_12": 25 }               
+        '1': { "1_10": 20, "1_14": 40, "2_10": 15, "3_9": 38, "4_10": 45, "5_11": 55, "0_16": 20 },
+        '2': { "3_15": 10, "5_12": 30, "1_10": 25, "2_12": 30, "4_15": 30, "0_10": 15 },
+        '3': { "6_18": 60, "0_09": 45, "2_18": 60, "6_6": 55, "0_6": 45, "5_18": 35 },
+        '4': { "3_15": 5, "5_12": 15, "1_10": 20, "2_12": 25 }
     },
-    
+
     users: {
         "user1": { trustScore: 1.0, actions: [], timeSavedMins: 0 }
     },
 
     alerts: [],
 };
-
+[
+    {
+        "id": "2",
+        "name": "State Bank Branch A",
+        "type": "BANK",
+        "lat": 28.6145,
+        "lng": 77.2105,
+        "rushAlert": "High rush expected due to salary day (1st of month)",
+        "currentPrediction": {
+            "waitTime": 11,
+            "avgWait": "SHORT",
+            "confidence": 0,
+            "uncertainty": "±10 min",
+            "surgeDetected": false,
+            "isTrendingUp": false,
+            "queueTrend": "STABLE",
+            "decisionRecommendation": "WAIT",
+            "explanation": "📊 Estimated based on typical patterns for this category.",
+            "predictionSource": "baseline",
+            "reportCount": 0,
+            "lastReportAge": null,
+            "dataFreshness": "none",
+            "dataReliability": "LOW",
+            "mlContribution": 18,
+            "accuracyTrend": "building",
+            "isFirstReport": true
+        },
+        "bestTimeToVisit": [
+            {
+                "day": "Wednesday",
+                "time": "3:00 PM",
+                "avgWaitMinutes": 10,
+                "avgWait": "SHORT"
+            },
+            {
+                "day": "Sunday",
+                "time": "10:00 AM",
+                "avgWaitMinutes": 15,
+                "avgWait": "SHORT"
+            },
+            {
+                "day": "Monday",
+                "time": "10:00 AM",
+                "avgWaitMinutes": 25,
+                "avgWait": "MEDIUM"
+            }
+        ],
+        "peakHoursToday": "Peak hour today: 3 PM (avoid)",
+        "nearbyAlternative": null
+    },
+    {
+        "id": "3",
+        "name": "Grand Temple",
+        "type": "TEMPLE",
+        "lat": 28.615,
+        "lng": 77.215,
+        "rushAlert": "High rush expected due to Tuesday Special Puja",
+        "currentPrediction": {
+            "waitTime": 14,
+            "avgWait": "SHORT",
+            "confidence": 0,
+            "uncertainty": "±10 min",
+            "surgeDetected": false,
+            "isTrendingUp": false,
+            "queueTrend": "STABLE",
+            "decisionRecommendation": "WAIT",
+            "explanation": "📊 Estimated based on typical patterns for this category.",
+            "predictionSource": "baseline",
+            "reportCount": 0,
+            "lastReportAge": null,
+            "dataFreshness": "none",
+            "dataReliability": "LOW",
+            "mlContribution": 26,
+            "accuracyTrend": "building",
+            "isFirstReport": true
+        },
+        "bestTimeToVisit": [
+            {
+                "day": "Friday",
+                "time": "6:00 PM",
+                "avgWaitMinutes": 35,
+                "avgWait": "MEDIUM"
+            },
+            {
+                "day": "Sunday",
+                "time": "9:00 AM",
+                "avgWaitMinutes": 45,
+                "avgWait": "LONG"
+            },
+            {
+                "day": "Sunday",
+                "time": "6:00 AM",
+                "avgWaitMinutes": 45,
+                "avgWait": "LONG"
+            }
+        ],
+        "peakHoursToday": "Data unavailable",
+        "nearbyAlternative": null
+    },
+    {
+        "id": "4",
+        "name": "HDFC Branch B",
+        "type": "BANK",
+        "lat": 28.6146,
+        "lng": 77.2107,
+        "currentPrediction": {
+            "waitTime": 15,
+            "avgWait": "SHORT",
+            "confidence": 0,
+            "uncertainty": "±10 min",
+            "surgeDetected": false,
+            "isTrendingUp": false,
+            "queueTrend": "STABLE",
+            "decisionRecommendation": "WAIT",
+            "explanation": "📊 Estimated based on typical patterns for this category.",
+            "predictionSource": "baseline",
+            "reportCount": 0,
+            "lastReportAge": null,
+            "dataFreshness": "none",
+            "dataReliability": "LOW",
+            "mlContribution": null,
+            "accuracyTrend": "building",
+            "isFirstReport": true
+        },
+        "bestTimeToVisit": [
+            {
+                "day": "Wednesday",
+                "time": "3:00 PM",
+                "avgWaitMinutes": 5,
+                "avgWait": "SHORT"
+            },
+            {
+                "day": "Friday",
+                "time": "12:00 PM",
+                "avgWaitMinutes": 15,
+                "avgWait": "SHORT"
+            },
+            {
+                "day": "Monday",
+                "time": "10:00 AM",
+                "avgWaitMinutes": 20,
+                "avgWait": "MEDIUM"
+            }
+        ],
+        "peakHoursToday": "Peak hour today: 3 PM (avoid)",
+        "nearbyAlternative": null
+    },
+    {
+        "id": "1",
+        "name": "City General Hospital",
+        "type": "HOSPITAL",
+        "lat": 28.6139,
+        "lng": 77.209,
+        "rushAlert": "High rush expected due to viral fever season",
+        "currentPrediction": {
+            "waitTime": 18,
+            "avgWait": "MEDIUM",
+            "confidence": 0,
+            "uncertainty": "±10 min",
+            "surgeDetected": false,
+            "isTrendingUp": false,
+            "queueTrend": "STABLE",
+            "decisionRecommendation": "WAIT",
+            "explanation": "📊 Estimated based on typical patterns for this category.",
+            "predictionSource": "baseline",
+            "reportCount": 0,
+            "lastReportAge": null,
+            "dataFreshness": "none",
+            "dataReliability": "LOW",
+            "mlContribution": 21,
+            "accuracyTrend": "building",
+            "isFirstReport": true
+        },
+        "bestTimeToVisit": [
+            {
+                "day": "Tuesday",
+                "time": "10:00 AM",
+                "avgWaitMinutes": 15,
+                "avgWait": "SHORT"
+            },
+            {
+                "day": "Monday",
+                "time": "10:00 AM",
+                "avgWaitMinutes": 20,
+                "avgWait": "MEDIUM"
+            },
+            {
+                "day": "Sunday",
+                "time": "4:00 PM",
+                "avgWaitMinutes": 20,
+                "avgWait": "MEDIUM"
+            }
+        ],
+        "peakHoursToday": "Peak hour today: 9 AM (avoid)",
+        "nearbyAlternative": null
+    }
+]
 /**
  * Get heuristic default wait time for a POI type at a given day/hour.
  * Returns null if no heuristic available.
