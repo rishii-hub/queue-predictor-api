@@ -20,15 +20,25 @@ function init(server, allowedOrigins = "*") {
   });
 }
 
-// ✅ FIXED FUNCTION
-function broadcastPredictionUpdate(data) {
-  if (!io) {
-    console.warn("⚠️ Socket not initialized");
-    return;
-  }
-  io.emit("predictionUpdate", data);
+// ✅ 1. Prediction update
+function broadcastPredictionUpdate(poiId, data) {
+  if (!io) return;
+  io.emit("predictionUpdate", { poiId, ...data });
 }
 
+// ✅ 2. New report
+function broadcastNewReport(report) {
+  if (!io) return;
+  io.emit("newReport", report);
+}
+
+// ✅ 3. Surge alert
+function broadcastSurgeAlert(poiId, poiName) {
+  if (!io) return;
+  io.emit("surgeAlert", { poiId, poiName });
+}
+
+// ✅ Clients count
 function getClientCount() {
   return io ? io.engine.clientsCount : 0;
 }
@@ -36,5 +46,7 @@ function getClientCount() {
 module.exports = {
   init,
   broadcastPredictionUpdate,
+  broadcastNewReport,
+  broadcastSurgeAlert,
   getClientCount
 };
