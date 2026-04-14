@@ -2,52 +2,30 @@ const { Server } = require("socket.io");
 
 let io;
 
-function init(server, allowedOrigins) {
-    io = new Server(server, {
-        cors: {
-            origin: allowedOrigins,
-            methods: ["GET", "POST"],
-            credentials: true
-        }
-    });
-
-    io.on("connection", (socket) => {
-        console.log("⚡ Client connected:", socket.id);
-
-        socket.on("disconnect", () => {
-            console.log("❌ Client disconnected:", socket.id);
-        });
-    });
-}
-
-function getClientCount() {
-    return io ? io.engine.clientsCount : 0;
-}
-
-module.exports = {
-    init,
-    getClientCount
-};
-let io;
-
-function init(server, allowedOrigins) {
-  const { Server } = require("socket.io");
-
+function init(server, allowedOrigins = "*") {
   io = new Server(server, {
     cors: {
       origin: allowedOrigins,
-      methods: ["GET", "POST"]
+      methods: ["GET", "POST"],
+      credentials: true
     }
   });
 
   io.on("connection", (socket) => {
     console.log("⚡ Client connected:", socket.id);
+
+    socket.on("disconnect", () => {
+      console.log("❌ Client disconnected:", socket.id);
+    });
   });
 }
 
-// 🔥 ADD THIS FUNCTION
+// ✅ FIXED FUNCTION
 function broadcastPredictionUpdate(data) {
-  if (!io) return;
+  if (!io) {
+    console.warn("⚠️ Socket not initialized");
+    return;
+  }
   io.emit("predictionUpdate", data);
 }
 
@@ -57,6 +35,6 @@ function getClientCount() {
 
 module.exports = {
   init,
-  getClientCount,
-  broadcastPredictionUpdate // ✅ export it
+  broadcastPredictionUpdate,
+  getClientCount
 };
